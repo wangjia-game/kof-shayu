@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>⚔️ 传奇挂机</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0a0a14;--card:#141428;--border:#2a2a44;--gold:#ffd700;--common:#b0b0b0;--rare:#4a90d9;--legend:#ff6b6b;--epic:#d946ef;--god:#ff00ff}
+body{font-family:"Microsoft YaHei",sans-serif;background:var(--bg);color:#ddd;min-height:100vh;font-size:13px}
+.container{max-width:1200px;margin:0 auto;padding:15px}
+.header{text-align:center;padding:20px 0;border-bottom:2px solid #ff4444;margin-bottom:15px}
+.header h1{font-size:28px;color:#ff4444;text-shadow:0 0 20px rgba(255,68,68,.5)}
+.sbar{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:15px}
+.sbox{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center}
+.sbox .lb{font-size:10px;color:#777}
+.sbox .vl{font-size:16px;font-weight:700;margin-top:2px}
+.sbox.gold .vl{color:var(--gold)}
+.sbox.exp .vl{color:#2ecc71}
+.nav{display:flex;gap:10px;margin-bottom:15px;flex-wrap:wrap}
+.nav-btn{flex:1;min-width:80px;padding:12px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:#888;cursor:pointer;font-size:12px;font-weight:700}
+.nav-btn.ac{background:#ff4444;color:#fff;border-color:#ff4444}
+.panel{display:none}
+.panel.ac{display:block}
+.map-select{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:15px}
+.map-btn{padding:15px;background:var(--card);border:2px solid var(--border);border-radius:8px;color:#888;cursor:pointer;font-size:12px}
+.map-btn.ac{border-color:#2ecc71;color:#2ecc71}
+.map-btn:disabled{opacity:.5;cursor:not-allowed}
+.equip-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:15px}
+.equip-slot{background:var(--card);border:2px solid var(--border);border-radius:8px;padding:10px;min-height:120px;cursor:pointer}
+.equip-slot:hover{border-color:#ffd700}
+.equip-slot .name{font-size:11px;margin-bottom:5px}
+.equip-slot .stats{font-size:9px;color:#888}
+.common{border-color:var(--common);color:var(--common)}
+.rare{border-color:var(--rare);color:var(--rare)}
+.legend{border-color:var(--legend);color:var(--legend)}
+.epic{border-color:var(--epic);color:var(--epic)}
+.god{border-color:var(--god);color:var(--god)}
+.material-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:15px}
+.material-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center}
+.material-item .name{font-size:11px;margin-bottom:5px}
+.material-item .count{font-size:14px;font-weight:700;color:#ffd700}
+.btn{padding:10px 20px;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:700}
+.btn:hover{opacity:.8}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.bp{background:#ff4444;color:#fff}
+.bg{background:#2ecc71;color:#fff}
+.bo{background:transparent;border:1px solid var(--border);color:#aaa}
+.log-box{background:#0d0d1a;border:1px solid var(--border);border-radius:8px;padding:10px;max-height:200px;overflow-y:auto;font-size:11px}
+.log-entry{margin:3px 0;padding:3px;border-radius:3px}
+.log-common{color:var(--common)}
+.log-rare{color:var(--rare)}
+.log-legend{color:var(--legend)}
+.log-epic{color:var(--epic)}
+.log-god{color:var(--god)}
+.log-win{color:#2ecc71}
+.attr-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:15px}
+.attr-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px}
+.attr-item .name{font-size:11px;color:#888;margin-bottom:5px}
+.attr-item .value{font-size:16px;font-weight:700;color:#ffd700}
+.battle-scene{background:#0d0d1a;border:2px solid #ff4444;border-radius:8px;padding:20px;margin-bottom:15px;position:relative;overflow:hidden;min-height:300px}
+.battle-field{display:grid;grid-template-columns:1fr 100px 1fr;gap:20px;align-items:center}
+.battle-unit{text-align:center;position:relative}
+.battle-unit .sprite{font-size:60px;position:relative;z-index:10}
+.battle-unit .hp-bar{width:100%;height:10px;background:#333;border-radius:5px;overflow:hidden;margin-top:10px}
+.battle-unit .hp-fill{height:100%;background:linear-gradient(90deg,#ff4444,#ff6b6b);transition:width .3s}
+.battle-unit .name{font-size:12px;margin-top:5px;color:#fff}
+.damage-number{position:absolute;font-size:24px;font-weight:700;color:#ff6b6b;animation:damageFloat 1s ease forwards;z-index:20}
+@keyframes damageFloat{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-50px)}}
+.skill-effect{position:absolute;font-size:40px;animation:skillAnim .5s ease forwards;z-index:15}
+@keyframes skillAnim{0%{opacity:0;transform:scale(0)}50%{opacity:1;transform:scale(1.5)}100%{opacity:0;transform:scale(2)}}
+.boss-hp-bar{width:100%;height:20px;background:#333;border-radius:10px;overflow:hidden;margin-bottom:10px}
+.boss-hp-fill{height:100%;background:linear-gradient(90deg,#ff0000,#ff4444);transition:width .3s}
+.modal-o{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:100}
+.modal-o.show{display:flex}
+.modal{background:var(--card);border:2px solid #ff4444;border-radius:12px;padding:20px;max-width:400px;width:90%}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h1>⚔️ 传奇挂机</h1>
+</div>
+
+<div class="sbar">
+<div class="sbox gold"><div class="lb">💰 金币</div><div class="vl" id="gold">0</div></div>
+<div class="sbox exp"><div class="lb">⭐ 经验</div><div class="vl" id="exp">0</div></div>
+<div class="sbox"><div class="lb">🎒 战力</div><div class="vl" id="power">0</div></div>
+<div class="sbox"><div class="lb">🗺️ 大陆</div><div class="vl" id="continent">1</div></div>
+<div class="sbox"><div class="lb">🗺️ 地图</div><div class="vl" id="map">1</div></div>
+</div>
+
+<div class="nav">
+<button class="nav-btn ac" data-panel="equip">🎒 装备</button>
+<button class="nav-btn" data-panel="material">📦 材料</button>
+<button class="nav-btn" data-panel="attr">📊 属性</button>
+<button class="nav-btn" data-panel="map">🗺️ 地图</button>
+<button class="nav-btn" data-panel="tower">🏰 BOSS 塔</button>
+<button class="nav-btn" data-panel="worldboss">👹 世界 BOSS</button>
+<button class="nav-btn" data-panel="gm">🔧 GM</button>
+</div>
+
+<div class="panel ac" id="panel-equip">
+<div class="equip-grid" id="equip-grid"></div>
+<div class="log-box" id="equip-log"></div>
+</div>
+
+<div class="panel" id="panel-material">
+<div class="material-grid" id="material-grid"></div>
+<div style="margin-top:15px">
+<button class="btn bg bblk" onclick="toggleAutoUpgrade()">🔄 自动升级材料</button>
+</div>
+</div>
+
+<div class="panel" id="panel-attr">
+<div class="attr-grid" id="attr-grid"></div>
+</div>
+
+<div class="panel" id="panel-map">
+<div class="map-select" id="map-select"></div>
+<div class="log-box" id="map-log"></div>
+</div>
+
+<div class="panel" id="panel-tower">
+<div style="text-align:center;margin-bottom:15px">
+<div style="font-size:18px;margin-bottom:10px">当前层数：<span id="tower-floor" style="color:#ff4444">1</span></div>
+<button class="btn bp" onclick="challengeTower()">⚔️ 挑战 BOSS</button>
+<button class="btn bg" onclick="toggleAutoTower()">🔄 自动挑战</button>
+</div>
+<div class="log-box" id="tower-log"></div>
+</div>
+
+<div class="panel" id="panel-worldboss">
+<div class="battle-scene" id="boss-scene" style="display:none">
+<div class="boss-hp-bar"><div class="boss-hp-fill" id="boss-hp-fill" style="width:100%"></div></div>
+<div class="battle-field">
+<div class="battle-unit">
+<div class="sprite" id="player-sprite">🧙</div>
+<div class="hp-bar"><div class="hp-fill" id="player-hp" style="width:100%"></div></div>
+<div class="name">玩家</div>
+</div>
+<div style="text-align:center;font-size:40px;color:#ff4444">VS</div>
+<div class="battle-unit">
+<div class="sprite" id="boss-sprite">👹</div>
+<div class="hp-bar"><div class="hp-fill" id="boss-hp" style="width:100%"></div></div>
+<div class="name" id="boss-name">世界 BOSS</div>
+</div>
+</div>
+<div id="boss-effects"></div>
+</div>
+<div style="text-align:center;margin-top:15px">
+<button class="btn bp" onclick="startWorldBoss()">⚔️ 挑战世界 BOSS</button>
+</div>
+<div class="log-box" id="boss-log"></div>
+</div>
+
+<div class="panel" id="panel-gm">
+<div style="text-align:center">
+<div style="margin-bottom:15px">
+<div>经验倍率：<span id="exp-rate" style="color:#2ecc71">1</span>x</div>
+<button class="btn bg" onclick="setExpRate()">设置经验倍率</button>
+</div>
+<div style="margin-bottom:15px">
+<div>爆率倍率：<span id="drop-rate" style="color:#ffd700">1</span>x</div>
+<button class="btn bg" onclick="setDropRate()">设置爆率倍率</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<script>
+let game = {
+gold: 0,
+exp: 0,
+power: 0,
+continent: 1,
+map: 1,
+equip: {head: null,neck: null,body: null,weapon: null,ring: null,shoes: null},
+materials: {helmet: 0,medal: 0,shield: 0,gem: 0},
+autoUpgrade: false,
+autoTower: false,
+towerFloor: 1,
+expRate: 1,
+dropRate: 1,
+playerHp: 1000,
+playerMaxHp: 1000,
+bossActive: false,
+bossHp: 10000,
+bossMaxHp: 10000
+};
+
+const equipTypes = ['head','neck','body','weapon','ring','shoes'];
+const equipNames = {head:'头盔',neck:'项链',body:'盔甲',weapon:'武器',ring:'戒指',shoes:'鞋子'};
+
+const maps = [
+{name:'新手村',level:1,set:'无赦',continent:1},
+{name:'荒野',level:100,set:'大蛇',continent:1},
+{name:'沙漠',level:200,set:'蚩尤',continent:1},
+{name:'冰原',level:300,set:'冰霜',continent:1},
+{name:'火山',level:400,set:'烈焰',continent:1},
+{name:'二大陆·荒野',level:500,set:'大蛇',continent:2},
+{name:'二大陆·沙漠',level:600,set:'蚩尤',continent:2},
+{name:'二大陆·冰原',level:700,set:'冰霜',continent:2},
+{name:'二大陆·火山',level:800,set:'烈焰',continent:2},
+{name:'二大陆·深渊',level:900,set:'深渊',continent:2}
+];
+
+function generateEquip(mapIndex) {
+const map = maps[mapIndex];
+const type = equipTypes[Math.floor(Math.random() * equipTypes.length)];
+const rand = Math.random() * 100;
+let rarity,rarityName,color;
+if (rand < 40) {rarity='common';rarityName='普通';color='var(--common)';}
+else if (rand < 70) {rarity='rare';rarityName='稀有';color='var(--rare)';}
+else if (rand < 90) {rarity='legend';rarityName='传说';color='var(--legend)';}
+else if (rand < 98) {rarity='epic';rarityName='史诗';color='var(--epic)';}
+else {rarity='god';rarityName='大神';color='var(--god)';}
+
+const statCountMap = {common:0,rare:2,legend:4,epic:6,god:10};
+const statCount = statCountMap[rarity];
+const stats = [];
+const statTypes = ['攻击','防御','生命','暴击','命中'];
+const multiplier = map.continent === 2 ? 2 : 1;
+for (let i = 0; i < statCount; i++) {
+const stat = statTypes[Math.floor(Math.random() * statTypes.length)];
+const value = Math.floor(Math.random() * 100 * (mapIndex + 1) * multiplier);
+stats.push(stat + '+' + value);
+}
+
+return {
+type: type,
+name: map.set + equipNames[type],
+rarity: rarity,
+rarityName: rarityName,
+color: color,
+level: map.level,
+stats: stats,
+map: mapIndex,
+continent: map.continent
+};
+}
+
+function calcPower() {
+let power = 0;
+const equipValues = Object.values(game.equip);
+for (let i = 0; i < equipValues.length; i++) {
+const e = equipValues[i];
+if (e) {
+for (let j = 0; j < e.stats.length; j++) {
+const s = e.stats[j];
+const val = parseInt(s.split('+')[1]);
+power += val;
+}
+}
+}
+game.power = power;
+}
+
+function calcAttr() {
+let attack = 0,defense = 0,hp = 0,crit = 0,hit = 0;
+const equipValues = Object.values(game.equip);
+for (let i = 0; i < equipValues.length; i++) {
+const e = equipValues[i];
+if (e) {
+for (let j = 0; j < e.stats.length; j++) {
+const s = e.stats[j];
+const parts = s.split('+');
+const stat = parts[0];
+const val = parseInt(parts[1]);
+if (stat === '攻击') attack += val;
+else if (stat === '防御') defense += val;
+else if (stat === '生命') hp += val;
+else if (stat === '暴击') crit += val;
+else if (stat === '命中') hit += val;
+}
+}
+}
+game.playerMaxHp = 1000 + hp;
+if (game.playerHp > game.playerMaxHp) game.playerHp = game.playerMaxHp;
+return {attack,defense,hp,crit,hit};
+}
+
+function updateUI() {
+document.getElementById('gold').textContent = game.gold.toLocaleString();
+document.getElementById('exp').textContent = game.exp.toLocaleString();
+document.getElementById('power').textContent = game.power.toLocaleString();
+document.getElementById('continent').textContent = game.continent;
+document.getElementById('map').textContent = game.map;
+document.getElementById('tower-floor').textContent = game.towerFloor;
+document.getElementById('exp-rate').textContent = game.expRate;
+document.getElementById('drop-rate').textContent = game.dropRate;
+}
+
+function renderEquip() {
+const grid = document.getElementById('equip-grid');
+let html = '';
+for (let i = 0; i < equipTypes.length; i++) {
+const type = equipTypes[i];
+const e = game.equip[type];
+if (!e) {
+html += '<div class="equip-slot"><div class="name">' + equipNames[type] + '</div><div class="stats">未装备</div></div>';
+} else {
+html += '<div class="equip-slot ' + e.rarity + '"><div class="name">' + e.name + '</div><div class="stats">' + e.stats.join('<br>') + '</div></div>';
+}
+}
+grid.innerHTML = html;
+}
+
+function renderMaterials() {
+const grid = document.getElementById('material-grid');
+const matNames = {helmet:'斗笠',medal:'勋章',shield:'盾牌',gem:'宝石'};
+let html = '';
+const matKeys = Object.keys(game.materials);
+for (let i = 0; i < matKeys.length; i++) {
+const key = matKeys[i];
+html += '<div class="material-item"><div class="name">' + matNames[key] + '</div><div class="count">' + game.materials[key] + '</div></div>';
+}
+grid.innerHTML = html;
+}
+
+function renderAttr() {
+const attr = calcAttr();
+const grid = document.getElementById('attr-grid');
+grid.innerHTML = '<div class="attr-item"><div class="name">💪 攻击力</div><div class="value">' + attr.attack + '</div></div>' +
+'<div class="attr-item"><div class="name">🛡️ 防御力</div><div class="value">' + attr.defense + '</div></div>' +
+'<div class="attr-item"><div class="name">❤️ 生命值</div><div class="value">' + game.playerMaxHp + '</div></div>' +
+'<div class="attr-item"><div class="name">⚡ 暴击率</div><div class="value">' + attr.crit + '%</div></div>' +
+'<div class="attr-item"><div class="name">🎯 命中率</div><div class="value">' + attr.hit + '%</div></div>' +
+'<div class="attr-item"><div class="name">⚔️ 战斗力</div><div class="value">' + game.power + '</div></div>';
+}
+
+function renderMaps() {
+const select = document.getElementById('map-select');
+let html = '';
+for (let i = 0; i < maps.length; i++) {
+const m = maps[i];
+const disabled = (i > 0 && game.map < i+1) ? 'disabled' : '';
+const ac = (game.map === i+1) ? 'ac' : '';
+html += '<button class="map-btn ' + ac + '" ' + disabled + '>' + m.name + '<br>' + m.set + '套装<br>' + m.level + '级</button>';
+}
+select.innerHTML = html;
+}
+
+function showPanel(id) {
+const panels = document.querySelectorAll('.panel');
+for (let i = 0; i < panels.length; i++) {
+panels[i].classList.remove('ac');
+}
+document.getElementById('panel-' + id).classList.add('ac');
+
+const navBtns = document.querySelectorAll('.nav-btn');
+for (let i = 0; i < navBtns.length; i++) {
+navBtns[i].classList.remove('ac');
+if (navBtns[i].dataset.panel === id) {
+navBtns[i].classList.add('ac');
+}
+}
+
+if (id === 'equip') renderEquip();
+if (id === 'material') renderMaterials();
+if (id === 'attr') renderAttr();
+if (id === 'map') renderMaps();
+}
+
+function selectMap(id) {
+game.map = id;
+if (id > 5 && game.continent === 1) {
+game.continent = 2;
+addLog('🗺️ 进入第二大陆！所有属性翻倍！', 'log-win');
+}
+saveGame();
+renderMaps();
+addLog('🗺️ 切换到地图：' + maps[id-1].name, 'log-win');
+}
+
+setInterval(function() {
+const map = maps[game.map - 1];
+const multiplier = map.continent === 2 ? 2 : 1;
+const exp = Math.floor(100 * game.map * game.expRate * multiplier);
+game.exp += exp;
+
+if (game.exp >= game.map * 1000) {
+game.exp = 0;
+game.map++;
+if (game.map > maps.length) game.map = maps.length;
+addLog('⭐ 升级！当前地图：' + maps[game.map-1].name, 'log-win');
+}
+
+if (Math.random() < 0.3 * game.dropRate) {
+const equip = generateEquip(game.map - 1);
+const old = game.equip[equip.type];
+if (!old || equip.stats.length > old.stats.length) {
+game.equip[equip.type] = equip;
+calcPower();
+addLog('🎉 获得 ' + equip.rarityName + '·' + equip.name, 'log-' + equip.rarity);
+} else {
+const matTypes = ['helmet','medal','shield','gem'];
+const mat = matTypes[Math.floor(Math.random() * matTypes.length)];
+game.materials[mat]++;
+addLog('📦 获得材料：' + mat, 'log-common');
+}
+saveGame();
+updateUI();
+renderEquip();
+}
+}, 1000);
+
+function challengeTower() {
+const bossPower = 100 * Math.pow(1.05, game.towerFloor - 1);
+const win = game.power >= bossPower;
+if (win) {
+game.towerFloor++;
+addLog('🏆 通过第' + (game.towerFloor-1) + '层！', 'log-win');
+} else {
+addLog('💀 挑战第' + game.towerFloor + '层失败！BOSS 战力：' + Math.floor(bossPower), 'log-lose');
+}
+saveGame();
+updateUI();
+}
+
+function toggleAutoUpgrade() {
+game.autoUpgrade = !game.autoUpgrade;
+if (game.autoUpgrade) {
+window.autoUpgradeInterval = setInterval(function() {
+const mats = ['helmet','medal','shield','gem'];
+let upgraded = false;
+for (let i = 0; i < mats.length; i++) {
+const mat = mats[i];
+if (game.materials[mat] >= 10) {
+game.materials[mat] -= 10;
+const bonus = 10;
+game.power += bonus;
+upgraded = true;
+}
+}
+if (upgraded) {
+addLog('⬆️ 材料升级！战力+', 'log-win');
+saveGame();
+updateUI();
+renderMaterials();
+}
+}, 1000);
+} else {
+clearInterval(window.autoUpgradeInterval);
+}
+addLog(game.autoUpgrade ? '✅ 自动升级已开启' : '⏸️ 自动升级已关闭', 'log-win');
+}
+
+function toggleAutoTower() {
+game.autoTower = !game.autoTower;
+if (game.autoTower) {
+window.autoTowerInterval = setInterval(challengeTower, 2000);
+addLog('✅ 自动挑战已开启', 'log-win');
+} else {
+clearInterval(window.autoTowerInterval);
+addLog('⏸️ 自动挑战已关闭', 'log-win');
+}
+}
+
+function startWorldBoss() {
+if (game.bossActive) {
+addLog('⚠️ BOSS 正在战斗中！', 'log-lose');
+return;
+}
+game.bossActive = true;
+game.bossMaxHp = 10000 * game.map * (game.continent === 2 ? 2 : 1);
+game.bossHp = game.bossMaxHp;
+game.playerHp = game.playerMaxHp;
+document.getElementById('boss-scene').style.display = 'block';
+updateBossUI();
+addLog('👹 世界 BOSS 出现！', 'log-win');
+worldBossFight();
+}
+
+function worldBossFight() {
+if (!game.bossActive) return;
+
+const playerDmg = Math.floor(game.power * (1 + Math.random() * 0.5));
+game.bossHp -= playerDmg;
+showDamage('boss', playerDmg);
+showSkillEffect('boss');
+updateBossUI();
+
+if (game.bossHp <= 0) {
+game.bossActive = false;
+const reward = game.bossMaxHp / 10;
+game.gold += Math.floor(reward);
+addLog('🏆 击败世界 BOSS！获得 ' + Math.floor(reward) + ' 金币！', 'log-win');
+document.getElementById('boss-scene').style.display = 'none';
+saveGame();
+updateUI();
+return;
+}
+
+setTimeout(function() {
+const bossDmg = Math.floor(game.bossMaxHp / 100 * (1 + Math.random() * 0.5));
+game.playerHp -= bossDmg;
+showDamage('player', bossDmg);
+showSkillEffect('player');
+
+if (game.playerHp <= 0) {
+game.bossActive = false;
+game.playerHp = game.playerMaxHp;
+addLog('💀 被世界 BOSS 击败！', 'log-lose');
+document.getElementById('boss-scene').style.display = 'none';
+updateBossUI();
+return;
+}
+
+updateBossUI();
+setTimeout(worldBossFight, 1000);
+}, 500);
+}
+
+function showDamage(target, amount) {
+const effects = document.getElementById('boss-effects');
+const dmg = document.createElement('div');
+dmg.className = 'damage-number';
+dmg.textContent = '-' + amount;
+dmg.style.left = target === 'boss' ? '70%' : '30%';
+dmg.style.top = '40%';
+effects.appendChild(dmg);
+setTimeout(function() { effects.removeChild(dmg); }, 1000);
+}
+
+function showSkillEffect(target) {
+const effects = document.getElementById('boss-effects');
+const effect = document.createElement('div');
+effect.className = 'skill-effect';
+effect.textContent = '💥';
+effect.style.left = target === 'boss' ? '70%' : '30%';
+effect.style.top = '30%';
+effects.appendChild(effect);
+setTimeout(function() { effects.removeChild(effect); }, 500);
+}
+
+function updateBossUI() {
+const bossHpPercent = (game.bossHp / game.bossMaxHp) * 100;
+const playerHpPercent = (game.playerHp / game.playerMaxHp) * 100;
+document.getElementById('boss-hp-fill').style.width = bossHpPercent + '%';
+document.getElementById('player-hp').style.width = playerHpPercent + '%';
+}
+
+function setExpRate() {
+const rate = prompt('设置经验倍率 (1-100):', game.expRate);
+if (rate && !isNaN(rate)) {
+game.expRate = Math.min(100, Math.max(1, parseInt(rate)));
+addLog('⭐ 经验倍率设置为 ' + game.expRate + 'x', 'log-win');
+saveGame();
+updateUI();
+}
+}
+
+function setDropRate() {
+const rate = prompt('设置爆率倍率 (1-100):', game.dropRate);
+if (rate && !isNaN(rate)) {
+game.dropRate = Math.min(100, Math.max(1, parseInt(rate)));
+addLog('🎁 爆率倍率设置为 ' + game.dropRate + 'x', 'log-win');
+saveGame();
+updateUI();
+}
+}
+
+function addLog(msg, cls) {
+const log = document.getElementById('map-log');
+const entry = document.createElement('div');
+entry.className = 'log-entry ' + cls;
+entry.textContent = msg;
+log.appendChild(entry);
+log.scrollTop = log.scrollHeight;
+while (log.children.length > 50) {
+log.removeChild(log.firstChild);
+}
+}
+
+function saveGame() {
+localStorage.setItem('legend-save-v2', JSON.stringify(game));
+}
+
+function loadGame() {
+const save = localStorage.getItem('legend-save-v2');
+if (save) {
+const loaded = JSON.parse(save);
+for (const key in loaded) {
+game[key] = loaded[key];
+}
+}
+}
+
+const navBtns = document.querySelectorAll('.nav-btn');
+for (let i = 0; i < navBtns.length; i++) {
+navBtns[i].addEventListener('click', function() {
+showPanel(this.dataset.panel);
+});
+}
+
+loadGame();
+updateUI();
+renderEquip();
+renderMaterials();
+renderAttr();
+renderMaps();
+addLog('🎮 游戏加载完成！', 'log-win');
+</script>
+</body>
+</html>
